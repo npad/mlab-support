@@ -1,0 +1,20 @@
+#! /bin/bash
+
+# Make allNPAD.tar, for input to autoinstall
+
+# NB: this can be invoked in any context that resembles 
+# ~iupui_npad/, including staging areas and running nodes
+
+# check the manifest
+# NB: check is noisy on running nodes
+if [ x"$1" = xcheck ]; then
+    rm -f allNPAD.tar
+    find . -name npad-dist -prune -o -type f \! -name '*~' -print | sed 's;^./;;' | sort > /tmp/files
+    sort lib/manifest.txt > /tmp/manifest
+
+    echo "diff files manifest"
+    diff /tmp/files /tmp/manifest
+fi
+
+date > .tar.timestamp
+tar cf allNPAD.tar -T lib/manifest.txt

@@ -1,0 +1,10 @@
+#! /bin/bash
+
+cd
+
+# a fast way to do a cold boot like install
+rm -f allNPAD.tar*
+NPADTAR=http://ks.measurementlab.net/npad/allNPAD.tar
+wget $NPADTAR
+tar xvf allNPAD.tar
+exec ./autoinstall

@@ -1,0 +1,64 @@
+#! /bin/bash
+
+# Autoinstall NPAD into MLab
+
+# Force .bash_profile just in case it was not run
+export HOME=/home/iupui_npad
+cd $HOME
+. ./.bash_profile
+
+# All actions can safely be reissued, errors are real
+set -e
+
+if [ x"$1" = xwget ]; then
+    shift
+
+    rm -f allNPAD*.tar*
+    NPADTAR=http://ks.measurementlab.net/npad/allNPAD.tar
+    wget $NPADTAR
+    tar xvf allNPAD.tar
+    exec ./autoinstall  # because we may have updated autoinstall
+    exit 1 # not reached
+fi
+
+# Record our passing
+date >> .autoinstall.timestamp
+touch -f ./autoinstall .version.timestamp
+
+echo do some reconnaissance
+df
+printenv
+ps axlw
+
+echo Kill any prior servers
+http stop			|| true
+sudo $HOME/bin/npad stop	|| true
+LS stop				|| true
+# Brutal workaround for buggy daemon scripts
+sudo killall /usr/bin/python	|| true
+sudo killall /usr/bin/rsync	|| true
+sudo killall /usr/sbin/httpd	|| true
+sudo killall /usr/sbin/tcpdump	|| true
+
+# do the meat
+dobase
+doconf
+donpad-dist
+cp .tar.timestamp VAR/www/tartime.txt
+
+# LS/autoinstall
+
+# Leave some crumbs in a log...
+# wget -O /dev/null http://dew.psc.edu/phonehome/MLab/$HOSTNAME/autoinstall || true
+
+# do some little checks
+ps axlw
+ls -lat .*.timestamp
+
+echo "Launch all services"
+(
+http start
+sudo $HOME/bin/npad start
+dosyncd
+doside
+) < /dev/null > /dev/null 2>&1 & # disconnect terminal so ssh will exit

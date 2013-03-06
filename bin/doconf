@@ -1,0 +1,88 @@
+#! /bin/bash
+
+set -e
+mkdir -p $HOME/VAR
+cd $HOME/VAR
+
+echo "Update global config and httpd"
+# Record our passing
+date > .doconf.timestamp
+
+# move or create the web area
+if [ ! -d www -a -d $HOME/npad-dist/www ]; then # ONCE
+    mv $HOME/npad-dist/www .
+    ln -s $HOME/VAR/www $HOME/npad-dist/www
+fi
+mkdir -p www logs run
+
+# echo Install and prep various logs, etc
+mkdir -p $HOME/run $HOME/VAR/www/ServerData/Log/
+if [ ! -d logs ]; then
+    mkdir logs
+    ln -s $HOME/VAR/www/ServerData/Log/ logs/diagserver
+#    rm -f Log # ONCE should be a link
+fi
+
+echo "Once only cleanup"
+(cd $HOME; rm -rf  MYADDR MYFQDN MYLOCATION MYNODE LOCATION Locations.txt httpd.conf* manifest.txt mkdist reinstall rsyncd.conf config.xml run logs )
+
+echo "Capture our idenity and its various attributes"
+rm -f MYADDR MYFQDN MYLOCATION MYNODE LOCATION
+
+# Check for OS version issues
+case `uname -r` in
+2.6.22*)
+	vsys=n
+	;;
+2.6.32*)
+	vsys=y
+	;;
+*)
+	echo "Unknown kernel version: " `uname -r`
+	;;
+esac
+# set per feature switches
+if [ x$vsys = xn ]; then
+    echo "Removing /etc/web100_vsys.conf"
+    rm -f /etc/web100_vsys.conf 
+elif [ x$vsys = xy ]; then
+    echo "Creating /etc/web100_vsys.conf"
+    echo "1" > /etc/web100_vsys.conf 
+fi
+
+# Get and check our own IP ADDRESS
+MYADDR=`/sbin/ifconfig | sed -n -e '0,/eth0:/d' -e '/^$/,$d' -e 's/ *inet addr:\([.0-9]*\) .*/\1/p'`
+ac=0`echo $MYADDR | wc -w`
+if [ $ac -ne 1 ]; then
+   echo "Failed to find my address: $MYADDR"
+   exit 1
+fi
+echo $MYADDR > MYADDR
+
+# Be aware that $HOSTNAME is the ssh interface
+# MYFQDN and MYADDR are the service name and address
+MYFQDN="npad.iupui.$HOSTNAME"
+echo $MYFQDN > MYFQDN
+
+# XXXX should check that MYFQDN and MYADDR agree
+
+# Generate some nice names
+set `echo $HOSTNAME | tr '.' ' '`
+site=`echo $2 | tr -d '[0-9]' | tr '[a-z]' '[A-Z]'`
+location=`sed -n "s/^$site[ 	][ 	]*//p" $HOME/lib/Locations.txt`
+if [ -n "$location" -a "$3" = "measurement-lab" -a "$4" = "org" ] ; then
+    MYLOCATION=$location
+    MYNODE=$1.$2
+else
+    MYLOCATION="(unknown near $site)"
+    MYNODE=`basename $HOSTNAME .measurement-lab.org`
+fi
+echo $MYLOCATION > MYLOCATION
+echo $MYNODE > MYNODE
+echo "Condfigured node $MYNODE at $MYFQDN ($MYADDR) in $MYLOCATION"
+
+echo "Configure httpd"
+# avoid redoing things
+sed "s/MYFQDN/$MYFQDN/" $HOME/lib/httpd.conf.npad > httpd.conf
+cmp -s httpd.conf /etc/httpd/conf/httpd.conf || sudo cp httpd.conf /etc/httpd/conf/httpd.conf
+[ -f $HOME/VAR/www/favicon.ico ] || cp $HOME/src/favicon.ico $HOME/VAR/www/favicon.ico

@@ -1,0 +1,5 @@
+#! /bin/bash
+
+# Brutal purge of all data more than 60 days old
+BASE=/home/iupui_npad/VAR/www
+find ${BASE}/{NPAD.v1,SideStream,ServerData} -type f -mtime +60 -print0 | sudo xargs -0 rm -f

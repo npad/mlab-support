@@ -1,0 +1,33 @@
+# MLab location codes, follows from IATA
+AMS	Amsterdam, NL
+ARN	Stockholm, SE
+ATH	Athens, GR
+ATL	Atlanta, GA, US
+DFW	Dallas/Fort Worth, TX, US
+DUB	Dublin, IE
+HAM	Hamburg, DE
+HND	Tokyo, JP
+IAD	Dulles, VA, US
+LAX	Los Angeles, CA, US
+LBA	Leeds, West Yorkshire, UK
+LGA	New York, NY, US
+LHR	London, UK
+LJU	LjubLjana, SI
+MAD	Madrid, ES
+MIA	Miami, FL
+MIL	Milan, IT
+NRT	Tokyo, JP
+NUQ	Mountain View, CA, US
+ORD	Chicago, IL, US
+PAO	Palo Alto, CA, US
+PAR	Paris, FR
+PDX	Portland, OR, US
+PRG	Prague, CZ
+SYD	Sydney, AU
+SEA	Seattle, WA, US
+SVG	Stavanger, NO
+SQL	San Carlos, CA
+TPE	Taipe, TW
+TRN	Turin, IT
+VIE	Vienna, AT
+WLG	Wellington, NZ

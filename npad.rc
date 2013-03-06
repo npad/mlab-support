@@ -1,0 +1,27 @@
+#/bin/bash
+
+# normally stdout, etc is connected to ./boot.log
+set -x
+export USER=iupui_npad
+export HOME=/home/iupui_npad
+cd $HOME
+
+function checkit {
+    echo "I am $$"
+    ps axlw
+    printenv
+}
+
+lf=.lock$$
+touch $lf
+if ln $lf .lockrc; then
+   sudo ./autoinstall
+   checkit
+   rm $lf .lockrc
+#   wget -O /dev/null http://$EVENTHOST/phonehome/MLab/$HOSTNAME/npad.rc/success
+else
+   # Something went wrong, leave diagnostic output in a unique logfile (the lock itself)
+   checkit >> $lf
+#   wget -O /dev/null http://$EVENTHOST/phonehome/MLab/$HOSTNAME/npad.rc/lockfail
+fi
+

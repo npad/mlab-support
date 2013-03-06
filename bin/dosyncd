@@ -1,0 +1,11 @@
+#! /bin/bash
+
+# start rsync and deamons relating to publishing the data
+
+cd $HOME
+sudo killall redisplay.py
+sudo killall rsync
+
+sudo redisplay.py -daemon $HOME/VAR/www/ServerData $HOME/VAR/www/NPAD.v1 `cat $HOME/VAR/MYNODE` &
+
+sudo rsync --daemon --config=$HOME/lib/rsyncd.conf --verbose --port=7999

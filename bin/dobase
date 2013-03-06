@@ -1,0 +1,35 @@
+#! /bin/bash
+
+set -e
+cd $HOME
+
+echo "Check/Install Web100 and system tools"
+
+# echo "Check/Install system tools"
+if [ ! -f .yumdone2 ]; then
+    rm -f .yumdone*
+    sudo yum -y install make
+    sudo yum -y install gcc
+    sudo yum -y install httpd
+    touch .yumdone2
+fi
+
+if cmp -s lib/libweb100.so /usr/local/lib/libweb100.so ; then
+    : echo no action
+else
+    rm -f /usr/local/include/web100/web100.h
+    echo -n "FORCE "
+fi
+
+echo "Install web100 in system locations"
+if [ ! -f /usr/local/include/web100/web100.h ]; then
+    sudo cp lib/libweb100*			/usr/local/lib/
+    sudo cp lib/python2.5/site-packages/*	/usr/lib/python2.5/site-packages/
+    sudo mkdir -p /usr/local/include/web100
+    sudo cp include/web100/web100.h		/usr/local/include/web100/
+else
+    echo "(Already done)"
+fi
+
+# make sure that everything is up to date
+sudo yum -y update

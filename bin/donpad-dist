@@ -1,0 +1,19 @@
+#! /bin/bash
+
+set -e
+echo "Configure the diagnotic server"
+
+cd $HOME/src/npad-cvs
+
+# patch the config
+rm -f $HOME/npad-dist/config.xml
+location=`cat $HOME/VAR/MYLOCATION`
+echo "Located at: $location"
+sed "s;LOCATION;$location;" $HOME/lib/config.xml > config.xml
+./config.py
+make
+
+echo "Verify that it built and has all the libraries, and install"
+./pathdiag/pathdiag.py --help | fgrep Usage
+make install
+

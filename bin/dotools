@@ -1,0 +1,11 @@
+#! /bin/bash
+
+set -e
+cd $HOME
+
+echo "Check/Install debugging tools (optional)"
+if [ ! -f .yumtools1 ]; then
+    rm -f .yumtools*
+    sudo yum -y install emacs
+    touch .yumtools1
+fi

@@ -12,7 +12,8 @@ DIAG_SERVER_OPTS="-d -u $USER -p $PIDFILE"
 if [ -f $PIDFILE ]; then
 	killall redisplay.py || :
 	killall exitstats.py || :
-	killall -9 tdump8000.py || : 	# does not respect sigint
+	killall tcpdump || : 	
+	killall -9 tdump8000.py || : 	# does not respect sigterm
 	pid=`cat $PIDFILE`
 	if [ "`ps -p $pid -o comm=`" = "DiagServer.py" ]; then
 		kill $pid

@@ -51,7 +51,7 @@ if [ ! -f $TOPDIR/build/DiagServer.py ] ; then
 fi
  
 # install init scripts
-cp -r mlab-support/init/* $TOPDIR/init/
+cp -r mlab-support/init $TOPDIR/
 
 # treat mlab-support/lib as a configuration directory
 cp -r mlab-support/lib $TOPDIR/conf

@@ -33,7 +33,7 @@ chkconfig httpd on
 if [[ $( uname -r ) =~ 2.6.22.* ]] ; then
     echo "Removing /etc/web100_vsys.conf"
     rm -f /etc/web100_vsys.conf 
-elif [[ $( unqme -r ) =~ 2.6.32.* ]] ; then
+elif [[ $( uname -r ) =~ 2.6.32.* ]] ; then
     echo "Creating /etc/web100_vsys.conf"
     echo "1" > /etc/web100_vsys.conf 
 else 

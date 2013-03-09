@@ -1,0 +1,209 @@
+Binary files web100_userland-1.8/lib/.web100.c.swp and web100_userland-1.8-patched/lib/.web100.c.swp differ
+diff -Ndur web100_userland-1.8/lib/web100.c web100_userland-1.8-patched/lib/web100.c
+--- web100_userland-1.8/lib/web100.c	2008-04-20 07:03:23.000000000 +0000
++++ web100_userland-1.8-patched/lib/web100.c	2013-02-26 17:35:50.000000000 +0000
+@@ -1012,6 +1012,107 @@
+     return WEB100_ERR_SUCCESS;
+ }
+ 
++int write_hex(FILE *lg, char *label, unsigned char *buf, int length) {
++    int i=0;
++
++    fprintf(lg, label); 
++    for (i=0; i < length; i++){
++    	fprintf(lg, "%02x", ((unsigned char *)buf)[i]); 
++    }
++    fprintf(lg, "\n");
++
++    return 0;
++}
++int read_alittle(char *filename, unsigned char *buf, int offset, int length) {
++    int fd_in;
++
++    fd_in  = open(filename, O_RDONLY);
++    if ( fd_in == -1 ) {
++        return -1; /* error */
++    }
++    memset(buf, 0, length);
++
++    lseek(fd_in, offset, SEEK_SET);
++    read(fd_in, buf, length);
++    close(fd_in);
++
++    return 0;
++}
++#define VSYS_PROC_WRITE_DEBUG 1
++static int vsys_config_read=0;                /* we have not yet read config*/
++static int vsys_config_use_original_function=1;  /* use original by default */
++
++int vsys_write(char *filename, long offset, const void *data, size_t length, FILE *lg)
++{
++    char buf[10];
++    int path_len = strlen(filename);
++    int data_len = (int)length;
++    int i_offset = (int)offset;
++    int fd_out = STDOUT_FILENO;
++    int fd_in  = STDIN_FILENO;
++    int ret = -1;
++    int r=0;
++    int i=0;
++
++#ifdef VSYS_PROC_WRITE_DEBUG
++    fprintf(lg, "\tvsys_write:\n");
++    fprintf(lg, "\t\tpath_len: %d  so(len): %u\n", 
++            path_len, sizeof(path_len));
++    fprintf(lg, "\t\toffset: %d  so(offset): %u\n", 
++            i_offset, sizeof(i_offset));
++    fprintf(lg, "\t\tdatlen: %d  so(datalen): %u\n", 
++            data_len, sizeof(data_len));
++#endif
++
++    fd_out = open("/vsys/web100_proc_write.in", O_WRONLY);
++    fd_in  = open("/vsys/web100_proc_write.out", O_RDONLY);
++
++    r = write(fd_out, &path_len, sizeof(path_len));
++    if ( r != sizeof(path_len) ) { 
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "failed...a %d\n", r);
++#endif
++        return -1; }
++    r = write(fd_out, &i_offset, sizeof(i_offset));
++    if ( r != sizeof(i_offset) ) { 
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "failed...b %d\n", r);
++#endif
++        return -1; }
++    r = write(fd_out, &data_len, sizeof(data_len));
++    if ( r != sizeof(data_len) ) { 
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "failed...c %d\n", r);
++#endif
++        return -1; }
++    r = write(fd_out, filename, path_len);
++    if ( r != path_len ) { 
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "failed...d %d\n", r);
++#endif
++        return -1; }
++    r = write(fd_out, data, data_len);
++    if ( r != data_len ) { 
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "failed...e %d\n", r);
++#endif
++        return -1; }
++    close(fd_out);
++
++    if ( fd_in != STDIN_FILENO ) {
++        memset(buf, 0, sizeof(buf));
++        r = read(fd_in, buf, 1);
++        if ( r != 1 ) { return -1; }
++        ret = atoi(buf);
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "\tret value: %d\n", ret);
++#endif
++        close(fd_in);
++    }
++
++    return ret;
++}
++
+ 
+ /*@
+ web100_raw_write - write a variable into a connection from a buffer
+@@ -1019,6 +1120,96 @@
+ int
+ web100_raw_write(web100_var *var, web100_connection *conn, void *buf)
+ {
++    int ret = 0;
++    FILE *lg=NULL;
++    FILE *cf=NULL;
++    char tmpbuf[10];
++    int  offset=0;
++    int  length=0;
++    char filename[PATH_MAX];
++    struct stat sb;
++
++    sprintf(filename, "%s/%d/%s", WEB100_ROOT_DIR, conn->cid, var->group->name);
++    offset = var->offset;
++    length = size_from_type(var->type);
++
++    /* read configuration once; restart process to read-again */
++    if ( ! vsys_config_read ) {
++    	if ( stat("/etc/web100_vsys.conf", &sb) == 0 ) {
++            /* if the file is present, then use new vsys-raw_write */
++            vsys_config_use_original_function = 0; // 0 means "no"
++    	}
++        vsys_config_read = 1;
++    }
++
++#ifdef VSYS_PROC_WRITE_DEBUG
++    lg = fopen("/tmp/check_write.log", "a");
++    write_hex(lg, "\tfilecfg: 0x ", (unsigned char *)tmpbuf, 1);
++    fprintf(lg, "raw_write_precheck:\n");
++    fprintf(lg, "\tuse orig: %d\n", vsys_config_use_original_function);
++    fprintf(lg, "\tfilename: %s\n", filename);
++    fprintf(lg, "\toffset  : %ld\n", offset);
++    fprintf(lg, "\tlength  : %d\n", length);
++    /* read initial value */
++    read_alittle(filename, tmpbuf, offset, (length > 10 ? 10 : length));
++    write_hex(lg, "\torig   : 0x ", tmpbuf, (length > 10 ? 10 : length));
++    write_hex(lg, "\twriting: 0x ", (unsigned char *)buf, length);
++#endif
++
++    if ( vsys_config_use_original_function > 0 ) {
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "\tusing original raw_write\n");
++#endif
++        ret = __orig_web100_raw_write(var, conn, buf);
++    } else {
++#ifdef VSYS_PROC_WRITE_DEBUG
++        fprintf(lg, "\tusing new vsys_write\n");
++#endif
++        ret = __new_web100_raw_write(var, conn, buf, lg);
++    }
++
++#ifdef VSYS_PROC_WRITE_DEBUG
++    read_alittle(filename, tmpbuf, offset, (length > 10 ? 10 : length));
++    write_hex(lg, "\treread : 0x ", tmpbuf, (length > 10 ? 10 : length));
++    fclose(lg);
++#endif
++
++    return ret;
++
++}
++int
++__new_web100_raw_write(web100_var *var, web100_connection *conn, void *buf, FILE *lg)
++{
++    FILE *fp;
++    char filename[PATH_MAX];
++    char readbuf[1024];
++    
++    if (var->group->agent != conn->agent) {
++        web100_errno = WEB100_ERR_INVAL;
++        return -WEB100_ERR_INVAL;
++    }
++    
++    if (conn->agent->type != WEB100_AGENT_TYPE_LOCAL) {
++        web100_errno = WEB100_ERR_AGENT_TYPE;
++        return -WEB100_ERR_AGENT_TYPE;
++    }
++    
++    /* READ ORIGINAL VALUE BEFORE WRITING TO IT */
++    /* web100_raw_read(var, conn, readbuf); */
++
++    sprintf(filename, "%s/%d/%s", WEB100_ROOT_DIR, conn->cid, var->group->name);
++    if ( vsys_write(filename, var->offset, buf, size_from_type(var->type), lg) ) {
++        perror("web100_raw_write: vsys_write failed");
++        web100_errno = WEB100_ERR_FILE;
++        return -WEB100_ERR_FILE;
++    }
++    
++    return WEB100_ERR_SUCCESS;
++
++}
++int
++__orig_web100_raw_write(web100_var *var, web100_connection *conn, void *buf)
++{
+     FILE *fp;
+     char filename[PATH_MAX];
+     

@@ -6,7 +6,7 @@ distribution.  Hand-editing is not recommended.  Re-run config.py with
 the '-p' flag to change values.
 -->
 	<section name="install">
-		<conf key="exec" value="/home/iupui_npad/npad-dist"/>
+		<conf key="exec" value="/home/iupui_npad/build"/>
 		<conf key="www" value="/home/iupui_npad/VAR/www"/>
 		<conf key="user" value="iupui_npad"/>
 		<conf key="group" value="slices"/>
@@ -44,6 +44,6 @@ the '-p' flag to change values.
 		<conf key="contactEmail"/>
 	</section>
 	<section name="system">
-		<conf key="web100_prefix" value="/usr/local"/>
+		<conf key="web100_prefix" value="/home/iupui_npad/build"/>
 	</section>
 </config>
